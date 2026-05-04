@@ -4,21 +4,12 @@ import { products } from '../data/products';
 interface CategoryFilterProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
+  categories: string[];
 }
 
-export const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSelectCategory }) => {
-  // Extrai categorias únicas dos produtos
-  const categories = ['Todos', ...new Set(products.map(p => p.category))];
-
+export const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory, onSelectCategory, categories }) => {
   return (
-    <div className="category-list" style={{ 
-      display: 'flex', 
-      gap: '12px', 
-      overflowX: 'auto', 
-      padding: '8px 0',
-      marginBottom: '16px',
-      scrollbarWidth: 'none' 
-    }}>
+    <div className="category-list">
       {categories.map(category => (
         <button
           key={category}
@@ -33,7 +24,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ selectedCategory
             color: selectedCategory === category ? 'white' : 'var(--text-main)',
             cursor: 'pointer',
             fontWeight: '500',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            flexShrink: 0 // Crucial para o scroll funcionar
           }}
         >
           {category}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Store, ShoppingBag, User, Search, MapPin, Clock, Plus, Minus } from 'lucide-react';
+import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus } from 'lucide-react';
 import { products } from './data/products';
 import { CategoryFilter } from './components/CategoryFilter';
 import type { Product } from './types';
@@ -14,6 +14,8 @@ function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  const isOpen = new Date().getHours() >= 8 && new Date().getHours() < 19;
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -44,25 +46,48 @@ function App() {
 
     const message = cart.map(item => `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`).join('%0A');
     const total = `%0A%0A*Total: R$ ${cartTotal.toFixed(2)}*`;
-    const phoneNumber = '5571993171586'; // Mantendo o número que estava no código original
+    const phoneNumber = '5571993171586'; 
     window.open(`https://wa.me/${phoneNumber}?text=Olá, gostaria de fazer um pedido em Sabores do Campo:%0A%0A${message}${total}`, '_blank');
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'Todos' || product.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const groupedProducts = products.reduce((acc, product) => {
+    if (!acc[product.category]) acc[product.category] = [];
+    acc[product.category].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
+
+  // Ordem desejada pelo usuário
+  const categoryOrder = ['Polpas', 'Biscoitos', 'Licores', 'Diversos'];
+  
+  // Pega todas as categorias existentes que não estão na ordem preferida e adiciona ao final
+  const otherCategories = Object.keys(groupedProducts).filter(cat => !categoryOrder.includes(cat));
+  const finalCategoryOrder = [...categoryOrder.filter(cat => groupedProducts[cat]), ...otherCategories];
+  const filterCategories = ['Todos', ...finalCategoryOrder];
+
+  const scrollToCategory = (category: string) => {
+    setSelectedCategory(category);
+    if (category === 'Todos') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const element = document.getElementById(`category-${category}`);
+      if (element) {
+        const navHeight = 80; // Altura aproximada da nav fixa
+        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo({
+          top: elementPosition - navHeight,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
 
   return (
     <div className="app-container">
       <nav className="top-nav">
         <div className="nav-container">
           <div className="nav-brand">
-            <Store size={24} />
-            <span>Deliciosos Sabores do Campo</span>
+            <img src={logoImg} alt="Logo" className="nav-logo" />
+            <span>Sabores do Campo</span>
           </div>
           <div className="nav-links">
             <a href="#" className="nav-item active">Início</a>
@@ -78,36 +103,34 @@ function App() {
 
       <main className="app-layout">
         <div className="content-area">
-          {/* Hero Section */}
-          <div className="hero-card">
-            <div className="hero-logo-box">
-              <img src={logoImg} alt="Logo Sabores do Campo" />
+          {/* Header Compacto com Info da Loja */}
+          <div className="compact-header">
+            <div className="header-top-row">
+              <h1>Produtos orgânicos</h1>
+              <span className={`badge ${isOpen ? 'badge-open' : 'badge-closed'}`}>
+                {isOpen ? 'Aberto agora' : 'Fechado agora'}
+              </span>
             </div>
-            <div className="hero-content">
-              <div className="hero-badges">
-                <span className="badge">Orgânico</span>
-                <span className="badge badge-primary">Aberto agora</span>
-              </div>
-              <h1>Sucos e Licores Artesanais</h1>
-              <p>Feitos com frutas frescas selecionadas, diretamente do campo para a sua mesa.</p>
 
-              <div className="store-info-row">
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={16} /> 08:00 - 19:00
-                </span>
-                <span>•</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={16} /> Via Universitária, Simões Filho, BA
-                </span>
+            <div className="store-info-grid">
+              <div className="info-item">
+                <Clock size={16} />
+                <span>08:00 - 19:00</span>
+              </div>
+              <div className="info-item">
+                <MapPin size={16} />
+                <span>Via Universitária, Simões Filho, BA</span>
               </div>
             </div>
           </div>
+
 
           {/* Filtros e Busca */}
           <div className="controls-wrapper" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
             <CategoryFilter 
               selectedCategory={selectedCategory} 
-              onSelectCategory={setSelectedCategory} 
+              onSelectCategory={scrollToCategory} 
+              categories={filterCategories}
             />
             <div className="search-bar" style={{ width: '100%' }}>
               <Search size={20} />
@@ -120,11 +143,11 @@ function App() {
             </div>
           </div>
 
-          {/* Produtos */}
+          {/* Seção de Destaques - Apenas Licores */}
           <section>
-            <h2 className="section-heading">Nossos Destaques</h2>
+            <h2 className="section-heading">Destaques</h2>
             <div className="products-grid">
-              {filteredProducts.map(product => (
+              {products.filter(p => p.category === 'Licores').map(product => (
                 <div key={product.id} className="product-card">
                   <div className="product-image-container">
                     <img src={product.image} alt={product.name} className="product-image" />
@@ -145,9 +168,49 @@ function App() {
               ))}
             </div>
           </section>
+
+          {/* Produtos Agrupados por Categoria na Ordem Correta */}
+          {finalCategoryOrder.map(category => {
+            const categoryProducts = groupedProducts[category];
+            if (!categoryProducts) return null;
+
+            const filtered = categoryProducts.filter(product => 
+              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              product.description.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            if (filtered.length === 0) return null;
+
+            return (
+              <section key={category} id={`category-${category}`} style={{ marginTop: '40px' }}>
+                <h2 className="section-heading">{category}</h2>
+                <div className="products-grid">
+                  {filtered.map(product => (
+                    <div key={product.id} className="product-card">
+                      <div className="product-image-container">
+                        <img src={product.image} alt={product.name} className="product-image" />
+                      </div>
+                      <div className="product-info">
+                        <h3>{product.name}</h3>
+                        <p className="product-description">{product.description}</p>
+                        <div className="product-footer">
+                          <span className="product-price">
+                            {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                          <button className="add-btn" onClick={() => addToCart(product)}>
+                            <Plus size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
 
-        {/* Carrinho Lateral */}
+        {/* Carrinho Lateral/Final */}
         <aside className="cart-sidebar">
           <div className="cart-container">
             <div className="cart-header">

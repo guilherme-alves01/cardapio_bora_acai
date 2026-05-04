@@ -5,6 +5,7 @@ export interface Product {
   price: number;
   image: string;
   category: string;
+  featured?: boolean;
 }
 
 export type Category = 'Sucos' | 'Polpas' | 'Licores' | 'Outros';
