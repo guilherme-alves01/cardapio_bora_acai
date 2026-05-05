@@ -248,7 +248,7 @@ export const products: Product[] = [
     id: 'sorvete-morango-400ml',
     name: 'Sorvete Natural de Morango (400ml)',
     description: 'Sorvete artesanal de morango 100% natural.',
-    price: 0.00, // Ajustar preço
+    price: 4.00, // Ajustar preço
     category: 'Sorvetes',
     image: getImageUrl('sorvete natural de morango 400ml.jpeg'),
     featured: true
