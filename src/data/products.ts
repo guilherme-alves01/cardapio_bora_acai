@@ -26,8 +26,7 @@ export const products: Product[] = [
     description: 'Biscoito amanteigado derrete na boca, perfeito para o café.',
     price: 3.00,
     category: 'Biscoitos',
-    image: getImageUrl('biscoito amanteigado.jpeg'),
-    featured: true
+    image: getImageUrl('biscoito amanteigado.jpeg')
   },
   {
     id: 'biscoito-americano-220g',
@@ -85,8 +84,7 @@ export const products: Product[] = [
     description: 'Licor artesanal de cajá, sabor intenso e frutado.',
     price: 20.00,
     category: 'Licores',
-    image: getImageUrl('licor de cajá.jpeg'),
-    featured: true
+    image: getImageUrl('licor de cajá.jpeg')
   },
   {
     id: 'licor-jabuticaba',
@@ -94,7 +92,8 @@ export const products: Product[] = [
     description: 'Licor artesanal de jabuticaba, selecionada e saborosa.',
     price: 25.00,
     category: 'Licores',
-    image: getImageUrl('licor de jabuticaba.jpeg')
+    image: getImageUrl('licor de jabuticaba.jpeg'),
+    featured: true
   },
   {
     id: 'licor-jenipapo',
@@ -102,7 +101,8 @@ export const products: Product[] = [
     description: 'O tradicional licor de jenipapo, maturado naturalmente.',
     price: 20.00,
     category: 'Licores',
-    image: getImageUrl('licor de jenipapo.jpeg')
+    image: getImageUrl('licor de jenipapo.jpeg'),
+    featured: true
   },
   {
     id: 'licor-tamarindo',
@@ -136,8 +136,7 @@ export const products: Product[] = [
     description: 'Polpa de cajá natural e refrescante.',
     price: 5.00,
     category: 'Polpas',
-    image: getImageUrl('polpa de cajá.jpeg'),
-    featured: true
+    image: getImageUrl('polpa de cajá.jpeg')
   },
   {
     id: 'polpa-cupuacu',

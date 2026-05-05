@@ -178,31 +178,41 @@ function App() {
             </div>
           </div>
 
-          {/* Seção de Destaques - Apenas Licores */}
-          <section>
-            <h2 className="section-heading">Destaques</h2>
-            <div className="products-grid">
-              {products.filter(p => p.category === 'Licores').map(product => (
-                <div key={product.id} className="product-card">
-                  <div className="product-image-container">
-                    <img src={product.image} alt={product.name} className="product-image" />
-                  </div>
-                  <div className="product-info">
-                    <h3>{product.name}</h3>
-                    <p className="product-description">{product.description}</p>
-                    <div className="product-footer">
-                      <span className="product-price">
-                        {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                      <button className="add-btn" onClick={() => addToCart(product)}>
-                        <Plus size={20} />
-                      </button>
+          {/* Seção de Destaques */}
+          {products.filter(p => p.featured && (
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description.toLowerCase().includes(searchQuery.toLowerCase())
+          )).length > 0 && (
+            <section>
+              <h2 className="section-heading">Destaques</h2>
+              <div className="products-grid">
+                {products
+                  .filter(p => p.featured && (
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+                  ))
+                  .map(product => (
+                    <div key={product.id} className="product-card">
+                      <div className="product-image-container">
+                        <img src={product.image} alt={product.name} className="product-image" />
+                      </div>
+                      <div className="product-info">
+                        <h3>{product.name}</h3>
+                        <p className="product-description">{product.description}</p>
+                        <div className="product-footer">
+                          <span className="product-price">
+                            {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                          <button className="add-btn" onClick={() => addToCart(product)}>
+                            <Plus size={20} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                  ))}
+              </div>
+            </section>
+          )}
 
           {/* Produtos Agrupados por Categoria na Ordem Correta */}
           {finalCategoryOrder.map(category => {

@@ -209,6 +209,7 @@ body {
   background: var(--bg-main);
   border-radius: var(--radius-sm);
   font-size: 1rem;
+  color: #000000; /* Força a cor preta para o texto da busca */
 }
 
 .search-bar input:focus {
