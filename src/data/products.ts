@@ -184,7 +184,8 @@ export const products: Product[] = [
     description: 'Polpa de manga doce e natural.',
     price: 4.00,
     category: 'Polpas',
-    image: getImageUrl('polpa de manga.jpeg')
+    image: getImageUrl('polpa de manga.jpeg'),
+    featured: true
   },
   {
     id: 'polpa-maracuja-sem-caroco',
@@ -200,7 +201,8 @@ export const products: Product[] = [
     description: 'Polpa de maracujá natural with seeds.',
     price: 8.00,
     category: 'Polpas',
-    image: getImageUrl('polpa de maracujá.jpeg')
+    image: getImageUrl('polpa de maracujá.jpeg'),
+    featured: true
   },
   {
     id: 'polpa-tamarindo',
