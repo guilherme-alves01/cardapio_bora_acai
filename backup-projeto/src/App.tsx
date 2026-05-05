@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X } from 'lucide-react';
+import { useState } from 'react';
+import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus } from 'lucide-react';
 import { products } from './data/products';
 import { CategoryFilter } from './components/CategoryFilter';
 import type { Product } from './types';
@@ -11,20 +11,9 @@ interface CartItem extends Product {
 }
 
 function App() {
-  // Inicialização preguiçosa do carrinho a partir do localStorage
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem('sabores-do-campo-cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
-  
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // Sincroniza o carrinho com o localStorage sempre que ele mudar
-  useEffect(() => {
-    localStorage.setItem('sabores-do-campo-cart', JSON.stringify(cart));
-  }, [cart]);
 
   const isOpen = new Date().getHours() >= 8 && new Date().getHours() < 19;
 
@@ -222,17 +211,13 @@ function App() {
         </div>
 
         {/* Carrinho Lateral/Final */}
-        <div className={`cart-overlay ${isCartOpen ? 'open' : ''}`} onClick={() => setIsCartOpen(false)}></div>
-        <aside className={`cart-sidebar ${isCartOpen ? 'open' : ''}`}>
+        <aside className="cart-sidebar">
           <div className="cart-container">
             <div className="cart-header">
               <ShoppingBag size={24} color="var(--primary)" />
               <h2>Sua Sacola</h2>
-              <button className="close-cart-btn" onClick={() => setIsCartOpen(false)}>
-                <X size={24} />
-              </button>
               {cart.length > 0 && (
-                <span className="badge cart-badge-desktop" style={{ marginLeft: 'auto' }}>{cart.reduce((acc, item) => acc + item.quantity, 0)} itens</span>
+                <span className="badge" style={{ marginLeft: 'auto' }}>{cart.reduce((acc, item) => acc + item.quantity, 0)} itens</span>
               )}
             </div>
 
@@ -285,19 +270,6 @@ function App() {
           </div>
         </aside>
       </main>
-
-      {cart.length > 0 && (
-        <button className="mobile-cart-fab" onClick={() => setIsCartOpen(true)}>
-          <div className="fab-icon-wrapper">
-            <ShoppingBag size={24} />
-            <span className="fab-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
-          </div>
-          <span className="fab-label">Ver Sacola</span>
-          <span className="fab-total">
-            {cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </span>
-        </button>
-      )}
     </div>
   );
 }

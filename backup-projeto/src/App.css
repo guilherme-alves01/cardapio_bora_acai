@@ -387,93 +387,6 @@ body {
   cursor: pointer;
 }
 
-/* Close button for cart (mobile) */
-.close-cart-btn {
-  display: none;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-}
-
-/* Overlay do Carrinho */
-.cart-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 1900;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.cart-overlay.open {
-  display: block;
-  opacity: 1;
-}
-
-/* Botão Flutuante Mobile */
-.mobile-cart-fab {
-  display: none;
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 12px 20px;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 10px 25px rgba(224, 90, 61, 0.3);
-  z-index: 1500;
-  cursor: pointer;
-  animation: slideUp 0.4s ease-out;
-}
-
-.fab-icon-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.fab-count {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: white;
-  color: var(--primary);
-  font-size: 0.7rem;
-  font-weight: 800;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fab-label {
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.fab-total {
-  font-weight: 800;
-  font-size: 1.1rem;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
 /* Responsividade Mobile */
 @media (max-width: 1024px) {
   .app-layout {
@@ -481,38 +394,8 @@ body {
   }
 
   .cart-sidebar {
-    position: fixed;
-    top: 0;
-    right: -100%;
     width: 100%;
-    max-width: 400px;
-    height: 100vh;
-    z-index: 2000;
-    transition: right 0.3s ease;
-    padding: 0;
-    margin: 0;
-  }
-
-  .cart-sidebar.open {
-    right: 0;
-  }
-
-  .cart-container {
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .close-cart-btn {
-    display: block;
-  }
-
-  .cart-badge-desktop {
-    display: none;
-  }
-
-  .mobile-cart-fab {
-    display: flex;
+    position: static;
   }
 }
 
