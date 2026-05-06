@@ -218,7 +218,7 @@ export const products: Product[] = [
     id: 'sorvete-uva-1l',
     name: 'Sorvete Natural de Uva (1 Litro)',
     description: 'Sorvete 100% natural sabor uva, embalagem de 1 litro.',
-    price: 10.00,
+    price: 15.00,
     category: 'Sorvetes',
     image: getImageUrl('sorvete natual 1 litro de uva.jpeg')
   },
@@ -226,7 +226,7 @@ export const products: Product[] = [
     id: 'sorvete-umbu-400ml',
     name: 'Sorvete Natural de Umbu (400ml)',
     description: 'Sorvete artesanal de umbu, sabor típico e refrescante.',
-    price: 4.00,
+    price: 5.00,
     category: 'Sorvetes',
     image: getImageUrl('Sorvete natural de umbu 400ml.jpeg')
   },
@@ -234,7 +234,7 @@ export const products: Product[] = [
     id: 'sorvete-tamarindo-1l',
     name: 'Sorvete Natural de Tamarindo (1 Litro)',
     description: 'Sorvete 100% natural sabor tamarindo, embalagem de 1 litro.',
-    price: 10.00,
+    price: 15.00,
     category: 'Sorvetes',
     image: getImageUrl('sorvete natural 1 litro de tamarindo.jpeg')
   },
@@ -242,7 +242,7 @@ export const products: Product[] = [
     id: 'sorvete-uva-400ml',
     name: 'Sorvete Natural de Uva (400ml)',
     description: 'Sorvete artesanal de uva feito com a fruta.',
-    price: 4.00,
+    price: 5.00,
     category: 'Sorvetes',
     image: getImageUrl('Sorvete natural de uva 400ml.jpeg')
   },
@@ -250,7 +250,7 @@ export const products: Product[] = [
     id: 'sorvete-morango-400ml',
     name: 'Sorvete Natural de Morango (400ml)',
     description: 'Sorvete artesanal de morango 100% natural.',
-    price: 4.00, // Ajustar preço
+    price: 5.00, // Ajustar preço
     category: 'Sorvetes',
     image: getImageUrl('sorvete natural de morango 400ml.jpeg'),
     featured: true
