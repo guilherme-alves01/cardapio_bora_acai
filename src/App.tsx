@@ -101,7 +101,7 @@ function Storefront() {
     const customerInfo = `*Cliente:* ${checkoutData.name}%0A${deliveryInfo}%0A${paymentInfo}`;
     const total = `%0A%0A*Total: R$ ${cartTotal.toFixed(2)}*`;
     
-    const phoneNumber = '5571993171586'; 
+    const phoneNumber = '5571985242978'; 
     const fullMessage = `Olá, gostaria de fazer um pedido na *Bora Açaí*:%0A%0A${customerInfo}%0A%0A*Itens:*%0A${itemsMessage}${total}`;
     
     window.open(`https://wa.me/${phoneNumber}?text=${fullMessage}`, '_blank');
