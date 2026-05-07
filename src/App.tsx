@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X } from 'lucide-react';
-import { products } from './data/products';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CheckoutModal } from './components/CheckoutModal';
+import { AdminPage } from './components/AdminPage';
 import type { CheckoutData } from './components/CheckoutModal';
 import type { Product } from './types';
-import logoImg from '../imagens para usar no projeto/logotipo.png';
+import { getCatalogProducts } from './services/catalog';
+import logoImg from './assets/logotipo_bora_acai.png';
 import './App.css';
 
 interface CartItem extends Product {
   quantity: number;
 }
 
-function App() {
+function Storefront() {
   // Inicialização preguiçosa do carrinho a partir do localStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem('sabores-do-campo-cart');
+    const savedCart = localStorage.getItem('bora-acai-cart');
     return savedCart ? JSON.parse(savedCart) : [];
   });
   
@@ -23,11 +24,36 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
 
   // Sincroniza o carrinho com o localStorage sempre que ele mudar
   useEffect(() => {
-    localStorage.setItem('sabores-do-campo-cart', JSON.stringify(cart));
+    localStorage.setItem('bora-acai-cart', JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCatalogProducts()
+      .then(nextProducts => {
+        if (!isMounted) return;
+        setCatalogProducts(nextProducts);
+        setCatalogError('');
+      })
+      .catch(error => {
+        if (!isMounted) return;
+        setCatalogError(error instanceof Error ? error.message : 'Erro ao carregar produtos.');
+      })
+      .finally(() => {
+        if (isMounted) setIsCatalogLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isOpen = new Date().getHours() >= 8 && new Date().getHours() < 19;
 
@@ -60,12 +86,9 @@ function App() {
 
     const itemsMessage = cart.map(item => `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`).join('%0A');
     
-    let deliveryInfo = '';
-    if (checkoutData.deliveryMethod === 'delivery') {
-      deliveryInfo = `*Entrega:* ${checkoutData.address}, nº ${checkoutData.number}, ${checkoutData.neighborhood}`;
-    } else {
-      deliveryInfo = `*Retirada:* Retirada no estabelecimento`;
-    }
+    const deliveryInfo = checkoutData.deliveryMethod === 'delivery'
+      ? `*Entrega:* ${checkoutData.address}, nº ${checkoutData.number}, ${checkoutData.neighborhood}`
+      : `*Retirada:* Retirada no estabelecimento`;
 
     let paymentInfo = `*Pagamento:* ${checkoutData.paymentMethod.toUpperCase()}`;
     if (checkoutData.paymentMethod === 'card' && checkoutData.cardType) {
@@ -79,13 +102,13 @@ function App() {
     const total = `%0A%0A*Total: R$ ${cartTotal.toFixed(2)}*`;
     
     const phoneNumber = '5571993171586'; 
-    const fullMessage = `Olá, gostaria de fazer um pedido na *Deliciosos Sabores do Campo*:%0A%0A${customerInfo}%0A%0A*Itens:*%0A${itemsMessage}${total}`;
+    const fullMessage = `Olá, gostaria de fazer um pedido na *Bora Açaí*:%0A%0A${customerInfo}%0A%0A*Itens:*%0A${itemsMessage}${total}`;
     
     window.open(`https://wa.me/${phoneNumber}?text=${fullMessage}`, '_blank');
     setIsCheckoutOpen(false);
   };
 
-  const groupedProducts = products.reduce((acc, product) => {
+  const groupedProducts = catalogProducts.reduce((acc, product) => {
     if (!acc[product.category]) acc[product.category] = [];
     acc[product.category].push(product);
     return acc;
@@ -121,8 +144,8 @@ function App() {
       <nav className="top-nav">
         <div className="nav-container">
           <div className="nav-brand">
-            <img src={logoImg} alt="Logo" className="nav-logo" />
-            <span>Sabores do Campo</span>
+            <img src={logoImg} alt="Bora Açaí" className="nav-logo" />
+            <span>Bora Açaí</span>
           </div>
           <div className="nav-links">
             <a href="#" className="nav-item active">Início</a>
@@ -141,7 +164,7 @@ function App() {
           {/* Header Compacto com Info da Loja */}
           <div className="compact-header">
             <div className="header-top-row">
-              <h1>Produtos orgânicos</h1>
+              <h1>Bora Açaí</h1>
               <span className={`badge ${isOpen ? 'badge-open' : 'badge-closed'}`}>
                 {isOpen ? 'Aberto agora' : 'Fechado agora'}
               </span>
@@ -179,14 +202,32 @@ function App() {
           </div>
 
           {/* Seção de Destaques */}
-          {products.filter(p => p.featured && (
+          {catalogError && (
+            <div className="catalog-notice catalog-error">
+              Não foi possível carregar o cardápio: {catalogError}
+            </div>
+          )}
+
+          {isCatalogLoading && (
+            <div className="catalog-notice">
+              Carregando cardápio...
+            </div>
+          )}
+
+          {!isCatalogLoading && !catalogError && catalogProducts.length === 0 && (
+            <div className="catalog-notice">
+              Nenhum item cadastrado por enquanto.
+            </div>
+          )}
+
+          {catalogProducts.filter(p => p.featured && (
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.description.toLowerCase().includes(searchQuery.toLowerCase())
           )).length > 0 && (
             <section>
               <h2 className="section-heading">Destaques</h2>
               <div className="products-grid">
-                {products
+                {catalogProducts
                   .filter(p => p.featured && (
                     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     p.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -265,9 +306,6 @@ function App() {
               <button className="close-cart-btn" onClick={() => setIsCartOpen(false)}>
                 <X size={24} />
               </button>
-              {cart.length > 0 && (
-                <span className="badge cart-badge-desktop" style={{ marginLeft: 'auto' }}>{cart.reduce((acc, item) => acc + item.quantity, 0)} itens</span>
-              )}
             </div>
 
             <div className="cart-content">
@@ -355,6 +393,14 @@ function App() {
       )}
     </div>
   );
+}
+
+function App() {
+  if (window.location.pathname === '/admin') {
+    return <AdminPage />;
+  }
+
+  return <Storefront />;
 }
 
 export default App;
