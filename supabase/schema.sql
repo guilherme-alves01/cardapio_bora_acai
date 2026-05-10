@@ -31,6 +31,34 @@ before update on public.products
 for each row
 execute function public.set_updated_at();
 
+create table if not exists public.store_settings (
+  id text primary key,
+  address text not null default '',
+  opening_hours text not null default '',
+  start_hour integer not null default 8,
+  end_hour integer not null default 19,
+  opening_days integer[] not null default '{1,2,3,4,5,6}',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.store_settings enable row level security;
+
+create policy "Configurações podem ser lidas por todos"
+on public.store_settings
+for select
+using (true);
+
+create policy "Usuarios autenticados podem gerenciar configurações"
+on public.store_settings
+for all
+to authenticated
+using (true)
+with check (true);
+
+insert into public.store_settings (id, address, opening_hours, start_hour, end_hour, opening_days)
+values ('main', 'Via Universitária, Simões Filho, BA', '08:00 - 19:00', 8, 19, '{1,2,3,4,5,6}')
+on conflict (id) do nothing;
+
 alter table public.products enable row level security;
 
 drop policy if exists "Produtos ativos podem ser lidos por todos" on public.products;

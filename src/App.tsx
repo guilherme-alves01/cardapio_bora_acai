@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X } from 'lucide-react';
+import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X, Loader2 } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminPage } from './components/AdminPage';
 import type { CheckoutData } from './components/CheckoutModal';
 import type { Product } from './types';
+import type { StoreSettings } from './types/settings';
 import { getCatalogProducts } from './services/catalog';
+import { getStoreSettings } from './services/settings';
 import logoImg from './assets/logotipo_bora_acai.png';
 import './App.css';
 
@@ -25,6 +27,7 @@ function Storefront() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
 
@@ -36,15 +39,19 @@ function Storefront() {
   useEffect(() => {
     let isMounted = true;
 
-    getCatalogProducts()
-      .then(nextProducts => {
+    Promise.all([
+      getCatalogProducts(),
+      getStoreSettings()
+    ])
+      .then(([nextProducts, nextSettings]) => {
         if (!isMounted) return;
         setCatalogProducts(nextProducts);
+        setSettings(nextSettings);
         setCatalogError('');
       })
       .catch(error => {
         if (!isMounted) return;
-        setCatalogError(error instanceof Error ? error.message : 'Erro ao carregar produtos.');
+        setCatalogError(error instanceof Error ? error.message : 'Erro ao carregar dados.');
       })
       .finally(() => {
         if (isMounted) setIsCatalogLoading(false);
@@ -55,7 +62,13 @@ function Storefront() {
     };
   }, []);
 
-  const isOpen = new Date().getHours() >= 8 && new Date().getHours() < 19;
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+  const isOpen = settings 
+    ? settings.opening_days?.includes(currentDay) && currentHour >= settings.start_hour && currentHour < settings.end_hour
+    : currentDay >= 1 && currentDay <= 6 && currentHour >= 8 && currentHour < 19;
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -173,11 +186,11 @@ function Storefront() {
             <div className="store-info-grid">
               <div className="info-item">
                 <Clock size={16} />
-                <span>08:00 - 19:00</span>
+                <span>{settings?.opening_hours || '08:00 - 19:00'}</span>
               </div>
               <div className="info-item">
                 <MapPin size={16} />
-                <span>Via Universitária, Simões Filho, BA</span>
+                <span>{settings?.address || 'Via Universitária, Simões Filho, BA'}</span>
               </div>
             </div>
           </div>

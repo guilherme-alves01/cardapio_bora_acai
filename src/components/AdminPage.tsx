@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, Loader2, LogOut, Save, Trash2, Upload } from 'lucide-react';
+import { Link, Loader2, LogOut, Save, Settings, Trash2, Upload } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getStoreSettings, updateStoreSettings } from '../services/settings';
+import type { StoreSettings } from '../types/settings';
 import logoImg from '../assets/logotipo_bora_acai.png';
 
 interface AdminProduct {
@@ -52,33 +54,40 @@ export function AdminPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [message, setMessage] = useState('');
+  const [settingsMessage, setSettingsMessage] = useState('');
 
   const categories = useMemo(
     () => Array.from(new Set(products.map(product => product.category))).sort(),
     [products],
   );
 
-  const loadProducts = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!supabase) return;
 
-    const { data, error } = await supabase
-      .from('products')
-      .select('id, name, description, price, image_url, category, featured, active, sort_order')
-      .order('category', { ascending: true })
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
+    const [productsRes, settingsRes] = await Promise.all([
+      supabase
+        .from('products')
+        .select('id, name, description, price, image_url, category, featured, active, sort_order')
+        .order('category', { ascending: true })
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true }),
+      getStoreSettings(),
+    ]);
 
-    if (error) {
-      setMessage(`Erro ao carregar produtos: ${error.message}`);
-      return;
+    if (productsRes.error) {
+      setMessage(`Erro ao carregar produtos: ${productsRes.error.message}`);
+    } else {
+      setProducts(productsRes.data ?? []);
     }
 
-    setProducts(data ?? []);
+    setSettings(settingsRes);
   }, []);
 
   useEffect(() => {
@@ -88,23 +97,24 @@ export function AdminPage() {
       setSession(data.session);
       setIsLoading(false);
       if (data.session) {
-        void loadProducts();
+        void loadData();
       }
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (nextSession) {
-        void loadProducts();
+        void loadData();
       } else {
         setProducts([]);
+        setSettings(null);
       }
     });
 
     return () => {
       subscription.subscription.unsubscribe();
     };
-  }, [loadProducts]);
+  }, [loadData]);
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -125,6 +135,7 @@ export function AdminPage() {
     if (!supabase) return;
     await supabase.auth.signOut();
     setProducts([]);
+    setSettings(null);
   };
 
   const uploadImage = async () => {
@@ -173,7 +184,7 @@ export function AdminPage() {
       setForm(emptyForm);
       setImageFile(null);
       setMessage('Produto cadastrado.');
-      await loadProducts();
+      await loadData();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Erro ao cadastrar produto.');
     } finally {
@@ -194,7 +205,24 @@ export function AdminPage() {
     }
 
     setMessage('Produto removido.');
-    await loadProducts();
+    await loadData();
+  };
+
+  const handleSaveSettings = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!settings) return;
+
+    setIsSavingSettings(true);
+    setSettingsMessage('');
+
+    try {
+      await updateStoreSettings(settings);
+      setSettingsMessage('Configurações salvas com sucesso!');
+    } catch (error) {
+      setSettingsMessage(error instanceof Error ? error.message : 'Erro ao salvar configurações.');
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   if (!isSupabaseConfigured) {
@@ -251,7 +279,7 @@ export function AdminPage() {
         <div className="admin-title-group">
           <img src={logoImg} alt="Bora Açaí" className="admin-topbar-logo" />
           <div>
-            <h1>Produtos e categorias</h1>
+            <h1>Administração</h1>
             <span>{session.user.email}</span>
           </div>
         </div>
@@ -264,92 +292,185 @@ export function AdminPage() {
       </header>
 
       <section className="admin-grid">
-        <form className="admin-panel" onSubmit={handleCreateProduct}>
-          <h2>Novo produto</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {settings && (
+            <form className="admin-panel" onSubmit={handleSaveSettings}>
+              <h2><Settings size={20} style={{ verticalAlign: 'middle', marginRight: '8px' }} />Configurações da Loja</h2>
+              
+              <label>
+                Endereço
+                <input 
+                  value={settings.address} 
+                  onChange={e => setSettings({ ...settings, address: e.target.value })} 
+                  placeholder="Ex: Via Universitária, Simões Filho, BA"
+                  required 
+                />
+              </label>
 
-          <label>
-            Nome
-            <input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} required />
-          </label>
+              <label>
+                Horário de Funcionamento (Texto)
+                <input 
+                  value={settings.opening_hours} 
+                  onChange={e => setSettings({ ...settings, opening_hours: e.target.value })} 
+                  placeholder="Ex: 08:00 - 19:00"
+                  required 
+                />
+              </label>
 
-          <label>
-            Categoria
-            <input
-              list="admin-categories"
-              value={form.category}
-              onChange={event => setForm({ ...form, category: event.target.value })}
-              placeholder="Ex: Açaí, Cremes, Bebidas"
-              required
-            />
-            <datalist id="admin-categories">
-              {categories.map(category => <option key={category} value={category} />)}
-            </datalist>
-          </label>
+              <div className="admin-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '16px', margin: 0 }}>
+                <label>
+                  Hora Abertura (0-23)
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="23" 
+                    value={settings.start_hour} 
+                    onChange={e => setSettings({ ...settings, start_hour: parseInt(e.target.value) || 0 })} 
+                    required 
+                  />
+                </label>
+                <label>
+                  Hora Fechamento (0-23)
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="23" 
+                    value={settings.end_hour} 
+                    onChange={e => setSettings({ ...settings, end_hour: parseInt(e.target.value) || 0 })} 
+                    required 
+                  />
+                </label>
+              </div>
 
-          <label>
-            Preço
-            <input
-              inputMode="decimal"
-              value={form.price}
-              onChange={event => setForm({ ...form, price: event.target.value })}
-              placeholder="Ex: 18,90"
-              required
-            />
-          </label>
+              <div style={{ marginBottom: '14px' }}>
+                <span style={{ display: 'block', fontWeight: 700, marginBottom: '8px', color: 'var(--text-dark)' }}>Dias de Funcionamento</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => (
+                    <label key={day} style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      margin: 0,
+                      padding: '4px 8px',
+                      background: 'var(--bg-main)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={settings.opening_days?.includes(index)} 
+                        onChange={e => {
+                          const days = settings.opening_days || [];
+                          if (e.target.checked) {
+                            setSettings({ ...settings, opening_days: [...days, index].sort() });
+                          } else {
+                            setSettings({ ...settings, opening_days: days.filter(d => d !== index) });
+                          }
+                        }}
+                      />
+                      {day}
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-          <label>
-            Descrição
-            <textarea value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} />
-          </label>
+              {settingsMessage && <p className="admin-message">{settingsMessage}</p>}
 
-          <label>
-            Ordem
-            <input
-              inputMode="numeric"
-              value={form.sortOrder}
-              onChange={event => setForm({ ...form, sortOrder: event.target.value })}
-            />
-          </label>
+              <button className="admin-primary-btn" type="submit" disabled={isSavingSettings}>
+                {isSavingSettings ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
+                Salvar Configurações
+              </button>
+            </form>
+          )}
 
-          <label className="admin-file-field">
-            Imagem
-            <span>
-              <Upload size={18} />
-              {imageFile ? imageFile.name : 'Escolher imagem'}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={event => setImageFile(event.target.files?.[0] ?? null)}
-            />
-          </label>
+          <form className="admin-panel" onSubmit={handleCreateProduct}>
+            <h2>Novo produto</h2>
 
-          <div className="admin-checks">
             <label>
-              <input
-                type="checkbox"
-                checked={form.featured}
-                onChange={event => setForm({ ...form, featured: event.target.checked })}
-              />
-              Destaque
+              Nome
+              <input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} required />
             </label>
+
             <label>
+              Categoria
               <input
-                type="checkbox"
-                checked={form.active}
-                onChange={event => setForm({ ...form, active: event.target.checked })}
+                list="admin-categories"
+                value={form.category}
+                onChange={event => setForm({ ...form, category: event.target.value })}
+                placeholder="Ex: Açaí, Cremes, Bebidas"
+                required
               />
-              Ativo
+              <datalist id="admin-categories">
+                {categories.map(category => <option key={category} value={category} />)}
+              </datalist>
             </label>
-          </div>
 
-          {message && <p className="admin-message">{message}</p>}
+            <label>
+              Preço
+              <input
+                inputMode="decimal"
+                value={form.price}
+                onChange={event => setForm({ ...form, price: event.target.value })}
+                placeholder="Ex: 18,90"
+                required
+              />
+            </label>
 
-          <button className="admin-primary-btn" type="submit" disabled={isSaving}>
-            {isSaving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
-            Salvar produto
-          </button>
-        </form>
+            <label>
+              Descrição
+              <textarea value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} />
+            </label>
+
+            <label>
+              Ordem
+              <input
+                inputMode="numeric"
+                value={form.sortOrder}
+                onChange={event => setForm({ ...form, sortOrder: event.target.value })}
+              />
+            </label>
+
+            <label className="admin-file-field">
+              Imagem
+              <span>
+                <Upload size={18} />
+                {imageFile ? imageFile.name : 'Escolher imagem'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={event => setImageFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+
+            <div className="admin-checks">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.featured}
+                  onChange={event => setForm({ ...form, featured: event.target.checked })}
+                />
+                Destaque
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.active}
+                  onChange={event => setForm({ ...form, active: event.target.checked })}
+                />
+                Ativo
+              </label>
+            </div>
+
+            {message && <p className="admin-message">{message}</p>}
+
+            <button className="admin-primary-btn" type="submit" disabled={isSaving}>
+              {isSaving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
+              Salvar produto
+            </button>
+          </form>
+        </div>
 
         <section className="admin-panel">
           <h2>Catálogo atual</h2>
