@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X, Loader2 } from 'lucide-react';
+import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminPage } from './components/AdminPage';
