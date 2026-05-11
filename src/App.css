@@ -449,21 +449,26 @@ body {
 .product-modal-body {
   padding: 22px; overflow-y: auto;
 }
+
+.product-modal-image-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--bg-main);
+  overflow: hidden;
+  max-height: 45vh;
+}
+
+@media (max-width: 768px) {
   .product-modal-image-wrap {
-    width: 100%;
     aspect-ratio: 1 / 1;
-    background: var(--bg-main);
-    overflow: hidden;
-    max-height: 45vh;
+    height: min(45vh, 380px);
   }
-  
-  @media (max-width: 768px) {
-    .product-modal-image-wrap {
-      aspect-ratio: 1 / 1;
-      height: min(45vh, 380px);
-    }
-  }
-  margin: 6px 0 10px; color: #000000; font-size: 1.45rem;
+}
+
+.product-modal-body h2 {
+  margin: 6px 0 10px;
+  color: #000000;
+  font-size: 1.45rem;
 }
 
 .product-modal-body p {
