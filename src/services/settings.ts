@@ -3,11 +3,11 @@ import type { StoreSettings } from '../types/settings';
 
 const DEFAULT_SETTINGS: StoreSettings = {
   id: 'main',
-  address: 'Via Universitária, Simões Filho, BA',
+  address: 'Rua Principal, Centro',
   opening_hours: '08:00 - 19:00',
   start_hour: 8,
   end_hour: 19,
-  opening_days: [1, 2, 3, 4, 5, 6], // Segunda a Sábado por padrão
+  opening_days: [1, 2, 3, 4, 5, 6],
 };
 
 export const getStoreSettings = async (): Promise<StoreSettings> => {
@@ -23,7 +23,6 @@ export const getStoreSettings = async (): Promise<StoreSettings> => {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      // Not found, return default
       return DEFAULT_SETTINGS;
     }
     throw new Error(error.message);

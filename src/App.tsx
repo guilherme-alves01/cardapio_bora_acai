@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, User, Search, MapPin, Clock, Plus, Minus, X } from 'lucide-react';
+import { ShoppingBag, Search, MapPin, Clock, Plus, Minus, X, Settings } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminPage } from './components/AdminPage';
 import type { CheckoutData } from './components/CheckoutModal';
 import type { Product } from './types';
 import type { StoreSettings } from './types/settings';
-import { getCatalogProducts } from './services/catalog';
 import { getStoreSettings } from './services/settings';
+import { getCatalogProducts } from './services/catalog';
 import logoImg from './assets/logotipo_bora_acai.png';
 import './App.css';
 
@@ -16,55 +16,32 @@ interface CartItem extends Product {
 }
 
 function Storefront() {
-  // Inicialização preguiçosa do carrinho a partir do localStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
     const savedCart = localStorage.getItem('bora-acai-cart');
     return savedCart ? JSON.parse(savedCart) : [];
   });
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
-  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState('');
+  const [supabaseProducts, setSupabaseProducts] = useState<Product[]>([]);
 
-  // Sincroniza o carrinho com o localStorage sempre que ele mudar
   useEffect(() => {
     localStorage.setItem('bora-acai-cart', JSON.stringify(cart));
   }, [cart]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    Promise.all([
-      getCatalogProducts(),
-      getStoreSettings()
-    ])
-      .then(([nextProducts, nextSettings]) => {
-        if (!isMounted) return;
-        setCatalogProducts(nextProducts);
-        setSettings(nextSettings);
-        setCatalogError('');
-      })
-      .catch(error => {
-        if (!isMounted) return;
-        setCatalogError(error instanceof Error ? error.message : 'Erro ao carregar dados.');
-      })
-      .finally(() => {
-        if (isMounted) setIsCatalogLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    getStoreSettings().then(setSettings);
+    getCatalogProducts().then(setSupabaseProducts);
   }, []);
+
+  const allProducts = supabaseProducts;
 
   const now = new Date();
   const currentHour = now.getHours();
-  const currentDay = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
+  const currentDay = now.getDay();
 
   const isOpen = settings 
     ? settings.opening_days?.includes(currentDay) && currentHour >= settings.start_hour && currentHour < settings.end_hour
@@ -96,41 +73,25 @@ function Storefront() {
 
   const handleCheckoutSubmit = (checkoutData: CheckoutData) => {
     if (cart.length === 0) return;
-
     const itemsMessage = cart.map(item => `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`).join('%0A');
-    
-    const deliveryInfo = checkoutData.deliveryMethod === 'delivery'
+    let deliveryInfo = checkoutData.deliveryMethod === 'delivery' 
       ? `*Entrega:* ${checkoutData.address}, nº ${checkoutData.number}, ${checkoutData.neighborhood}`
       : `*Retirada:* Retirada no estabelecimento`;
-
     let paymentInfo = `*Pagamento:* ${checkoutData.paymentMethod.toUpperCase()}`;
-    if (checkoutData.paymentMethod === 'card' && checkoutData.cardType) {
-      paymentInfo += ` (${checkoutData.cardType.charAt(0).toUpperCase() + checkoutData.cardType.slice(1)})`;
-    }
-    if (checkoutData.paymentMethod === 'cash' && checkoutData.changeFor) {
-      paymentInfo += ` (Troco para ${checkoutData.changeFor})`;
-    }
-
-    const customerInfo = `*Cliente:* ${checkoutData.name}%0A${deliveryInfo}%0A${paymentInfo}`;
-    const total = `%0A%0A*Total: R$ ${cartTotal.toFixed(2)}*`;
-    
-    const phoneNumber = '5571985242978'; 
-    const fullMessage = `Olá, gostaria de fazer um pedido na *Bora Açaí*:%0A%0A${customerInfo}%0A%0A*Itens:*%0A${itemsMessage}${total}`;
-    
-    window.open(`https://wa.me/${phoneNumber}?text=${fullMessage}`, '_blank');
+    if (checkoutData.paymentMethod === 'card' && checkoutData.cardType) paymentInfo += ` (${checkoutData.cardType})`;
+    if (checkoutData.paymentMethod === 'cash' && checkoutData.changeFor) paymentInfo += ` (Troco para ${checkoutData.changeFor})`;
+    const fullMessage = `Olá, gostaria de fazer um pedido na *Bora Açaí*:%0A%0A*Cliente:* ${checkoutData.name}%0A${deliveryInfo}%0A${paymentInfo}%0A%0A*Itens:*%0A${itemsMessage}%0A%0A*Total: R$ ${cartTotal.toFixed(2)}*`;
+    window.open(`https://wa.me/5571993171586?text=${fullMessage}`, '_blank');
     setIsCheckoutOpen(false);
   };
 
-  const groupedProducts = catalogProducts.reduce((acc, product) => {
+  const groupedProducts = allProducts.reduce((acc, product) => {
     if (!acc[product.category]) acc[product.category] = [];
     acc[product.category].push(product);
     return acc;
   }, {} as Record<string, Product[]>);
 
-  // Ordem desejada pelo usuário
-  const categoryOrder = ['Polpas', 'Biscoitos', 'Licores', 'Sorvetes', 'Diversos'];
-  
-  // Pega todas as categorias existentes que não estão na ordem preferida e adiciona ao final
+  const categoryOrder = ['Açaí', 'Cremes', 'Acompanhamentos', 'Bebidas'];
   const otherCategories = Object.keys(groupedProducts).filter(cat => !categoryOrder.includes(cat));
   const finalCategoryOrder = [...categoryOrder.filter(cat => groupedProducts[cat]), ...otherCategories];
   const filterCategories = ['Todos', ...finalCategoryOrder];
@@ -142,12 +103,7 @@ function Storefront() {
     } else {
       const element = document.getElementById(`category-${category}`);
       if (element) {
-        const navHeight = 80; // Altura aproximada da nav fixa
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-        window.scrollTo({
-          top: elementPosition - navHeight,
-          behavior: 'smooth'
-        });
+        window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
       }
     }
   };
@@ -157,148 +113,58 @@ function Storefront() {
       <nav className="top-nav">
         <div className="nav-container">
           <div className="nav-brand">
-            <img src={logoImg} alt="Bora Açaí" className="nav-logo" />
+            <img src={logoImg} alt="Logo" className="nav-logo" />
             <span>Bora Açaí</span>
           </div>
           <div className="nav-links">
             <a href="#" className="nav-item active">Início</a>
-            <a href="#" className="nav-item">Promoções</a>
-            <a href="#" className="nav-item">Pedidos</a>
-            <a href="#" className="nav-item">
-              <User size={18} />
-              Entrar
-            </a>
+            <a href="#admin" className="nav-item nav-admin" onClick={() => window.location.hash = 'admin'}><Settings size={18} /> Admin</a>
           </div>
         </div>
       </nav>
 
       <main className="app-layout">
         <div className="content-area">
-          {/* Header Compacto com Info da Loja */}
           <div className="compact-header">
             <div className="header-top-row">
-              <h1>Bora Açaí</h1>
+              <h1>Seu açaí do seu jeito</h1>
               <span className={`badge ${isOpen ? 'badge-open' : 'badge-closed'}`}>
                 {isOpen ? 'Aberto agora' : 'Fechado agora'}
               </span>
             </div>
-
             <div className="store-info-grid">
-              <div className="info-item">
-                <Clock size={16} />
-                <span>{settings?.opening_hours || '08:00 - 19:00'}</span>
-              </div>
-              <div className="info-item">
-                <MapPin size={16} />
-                <span>{settings?.address || 'Via Universitária, Simões Filho, BA'}</span>
-              </div>
+              <div className="info-item"><Clock size={16} /><span>{settings?.opening_hours || '14:00 - 22:00'}</span></div>
+              <div className="info-item"><MapPin size={16} /><span>{settings?.address || 'Bora Açaí, Centro'}</span></div>
             </div>
           </div>
 
-
-          {/* Filtros e Busca */}
-          <div className="controls-wrapper" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
-            <CategoryFilter 
-              selectedCategory={selectedCategory} 
-              onSelectCategory={scrollToCategory} 
-              categories={filterCategories}
-            />
-            <div className="search-bar" style={{ width: '100%' }}>
+          <div className="controls-wrapper">
+            <CategoryFilter selectedCategory={selectedCategory} onSelectCategory={scrollToCategory} categories={filterCategories} />
+            <div className="search-bar">
               <Search size={20} />
-              <input
-                type="text"
-                placeholder="O que você deseja provar hoje?"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <input type="text" placeholder="O que você deseja hoje?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
 
-          {/* Seção de Destaques */}
-          {catalogError && (
-            <div className="catalog-notice catalog-error">
-              Não foi possível carregar o cardápio: {catalogError}
-            </div>
-          )}
-
-          {isCatalogLoading && (
-            <div className="catalog-notice">
-              Carregando cardápio...
-            </div>
-          )}
-
-          {!isCatalogLoading && !catalogError && catalogProducts.length === 0 && (
-            <div className="catalog-notice">
-              Nenhum item cadastrado por enquanto.
-            </div>
-          )}
-
-          {catalogProducts.filter(p => p.featured && (
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.description.toLowerCase().includes(searchQuery.toLowerCase())
-          )).length > 0 && (
-            <section>
-              <h2 className="section-heading">Destaques</h2>
-              <div className="products-grid">
-                {catalogProducts
-                  .filter(p => p.featured && (
-                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    p.description.toLowerCase().includes(searchQuery.toLowerCase())
-                  ))
-                  .map(product => (
-                    <div key={product.id} className="product-card">
-                      <div className="product-image-container">
-                        <img src={product.image} alt={product.name} className="product-image" />
-                      </div>
-                      <div className="product-info">
-                        <h3>{product.name}</h3>
-                        <p className="product-description">{product.description}</p>
-                        <div className="product-footer">
-                          <span className="product-price">
-                            {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
-                          <button className="add-btn" onClick={() => addToCart(product)}>
-                            <Plus size={20} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </section>
-          )}
-
-          {/* Produtos Agrupados por Categoria na Ordem Correta */}
           {finalCategoryOrder.map(category => {
-            const categoryProducts = groupedProducts[category];
-            if (!categoryProducts) return null;
-
-            const filtered = categoryProducts.filter(product => 
-              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              product.description.toLowerCase().includes(searchQuery.toLowerCase())
+            const filtered = (groupedProducts[category] || []).filter(p => 
+              p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+              p.description.toLowerCase().includes(searchQuery.toLowerCase())
             );
-
             if (filtered.length === 0) return null;
-
             return (
               <section key={category} id={`category-${category}`} style={{ marginTop: '40px' }}>
                 <h2 className="section-heading">{category}</h2>
                 <div className="products-grid">
                   {filtered.map(product => (
                     <div key={product.id} className="product-card">
-                      <div className="product-image-container">
-                        <img src={product.image} alt={product.name} className="product-image" />
-                      </div>
+                      <div className="product-image-container"><img src={product.image} alt={product.name} className="product-image" /></div>
                       <div className="product-info">
                         <h3>{product.name}</h3>
                         <p className="product-description">{product.description}</p>
                         <div className="product-footer">
-                          <span className="product-price">
-                            {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
-                          <button className="add-btn" onClick={() => addToCart(product)}>
-                            <Plus size={20} />
-                          </button>
+                          <span className="product-price">{product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                          <button className="add-btn" onClick={() => addToCart(product)}><Plus size={20} /></button>
                         </div>
                       </div>
                     </div>
@@ -309,99 +175,43 @@ function Storefront() {
           })}
         </div>
 
-        {/* Carrinho Lateral/Final */}
         <div className={`cart-overlay ${isCartOpen ? 'open' : ''}`} onClick={() => setIsCartOpen(false)}></div>
         <aside className={`cart-sidebar ${isCartOpen ? 'open' : ''}`}>
           <div className="cart-container">
             <div className="cart-header">
               <ShoppingBag size={24} color="var(--primary)" />
               <h2>Sua Sacola</h2>
-              <button className="close-cart-btn" onClick={() => setIsCartOpen(false)}>
-                <X size={24} />
-              </button>
+              <button className="close-cart-btn" onClick={() => setIsCartOpen(false)}><X size={24} /></button>
             </div>
-
             <div className="cart-content">
-              {cart.length === 0 ? (
-                <div className="empty-cart">
-                  <ShoppingBag size={48} strokeWidth={1} />
-                  <p>Adicione itens para começar o seu pedido.</p>
-                </div>
-              ) : (
-                cart.map(item => (
-                  <div key={item.id} className="cart-item">
-                    <div className="cart-item-image">
-                      <img src={item.image} alt={item.name} />
-                    </div>
-                    
-                    <div className="cart-item-info">
-                      <div className="cart-item-header">
-                        <h4>{item.name}</h4>
-                        <span className="cart-item-total-price">
-                          {(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                      </div>
-                      
-                      <div className="cart-item-details">
-                        <span className="cart-item-unit-price">
-                          {item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / un
-                        </span>
-                        
-                        <div className="item-actions">
-                          <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
-                            <Minus size={14} />
-                          </button>
-                          <span className="item-qty">{item.quantity}</span>
-                          <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
-                            <Plus size={14} />
-                          </button>
-                        </div>
+              {cart.length === 0 ? <p>Sua sacola está vazia.</p> : cart.map(item => (
+                <div key={item.id} className="cart-item">
+                  <div className="cart-item-info">
+                    <div className="cart-item-header"><h4>{item.name}</h4><span>{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                    <div className="cart-item-details">
+                      <div className="item-actions">
+                        <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}><Minus size={14} /></button>
+                        <span>{item.quantity}</span>
+                        <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}><Plus size={14} /></button>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
-
             {cart.length > 0 && (
               <div className="cart-footer">
-                <div className="totals">
-                  <div className="total-row">
-                    <span>Subtotal</span>
-                    <span>{cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                  </div>
-                  <div className="total-row grand-total">
-                    <span>Total a Pagar</span>
-                    <span>{cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                  </div>
-                </div>
-                <button className="checkout-btn" onClick={() => setIsCheckoutOpen(true)}>
-                  Finalizar Pedido <ShoppingBag size={20} />
-                </button>
-                </div>
-                )}
-                </div>
-                </aside>
-                </main>
-
-                <CheckoutModal 
-                isOpen={isCheckoutOpen}
-                onClose={() => setIsCheckoutOpen(false)}
-                onSubmit={handleCheckoutSubmit}
-                total={cartTotal}
-                />
-
-                {cart.length > 0 && (
-                <button className="mobile-cart-fab" onClick={() => setIsCartOpen(true)}>
-
-          <div className="fab-icon-wrapper">
-            <ShoppingBag size={24} />
-            <span className="fab-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
+                <div className="total-row grand-total"><span>Total</span><span>{cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                <button className="checkout-btn" onClick={() => setIsCheckoutOpen(true)}>Finalizar Pedido</button>
+              </div>
+            )}
           </div>
-          <span className="fab-label">Ver Sacola</span>
-          <span className="fab-total">
-            {cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </span>
+        </aside>
+      </main>
+      <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onSubmit={handleCheckoutSubmit} total={cartTotal} />
+      {cart.length > 0 && (
+        <button className="mobile-cart-fab" onClick={() => setIsCartOpen(true)}>
+          <ShoppingBag size={24} /> <span>Ver Sacola</span> <span>{cartTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
         </button>
       )}
     </div>
@@ -409,11 +219,13 @@ function Storefront() {
 }
 
 function App() {
-  if (window.location.pathname === '/admin') {
-    return <AdminPage />;
-  }
-
-  return <Storefront />;
+  const [view, setView] = useState(() => window.location.hash === '#admin' ? 'admin' : 'store');
+  useEffect(() => {
+    const handleHashChange = () => setView(window.location.hash === '#admin' ? 'admin' : 'store');
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+  return view === 'admin' ? <AdminPage /> : <Storefront />;
 }
 
 export default App;

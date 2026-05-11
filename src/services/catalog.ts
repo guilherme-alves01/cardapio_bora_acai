@@ -1,35 +1,14 @@
-import type { Product } from '../types';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { products as fallbackProducts } from '../data/products';
-
-interface ProductRow {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number | string;
-  image_url: string | null;
-  category: string;
-  featured: boolean | null;
-}
-
-const mapProduct = (row: ProductRow): Product => ({
-  id: row.id,
-  name: row.name,
-  description: row.description ?? '',
-  price: Number(row.price),
-  image: row.image_url ?? '',
-  category: row.category,
-  featured: Boolean(row.featured),
-});
+import type { Product } from '../types';
 
 export const getCatalogProducts = async (): Promise<Product[]> => {
   if (!isSupabaseConfigured || !supabase) {
-    return fallbackProducts;
+    return [];
   }
 
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, description, price, image_url, category, featured')
+    .select('*')
     .eq('active', true)
     .order('category', { ascending: true })
     .order('sort_order', { ascending: true })
@@ -39,5 +18,26 @@ export const getCatalogProducts = async (): Promise<Product[]> => {
     throw new Error(error.message);
   }
 
-  return (data ?? []).map(mapProduct);
+  return (data || []).map(p => ({
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    price: Number(p.price),
+    category: p.category,
+    image: p.image_url || '',
+    featured: p.featured || false
+  }));
+};
+
+export const getAllAdminProducts = async (): Promise<any[]> => {
+  if (!isSupabaseConfigured || !supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
 };
