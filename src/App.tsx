@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Search, MapPin, Clock, Plus, Minus, X, Settings } from 'lucide-react';
+import { ShoppingBag, Search, MapPin, Clock, Plus, Minus, X, Settings, Loader2 } from 'lucide-react';
 import { CategoryFilter } from './components/CategoryFilter';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminPage } from './components/AdminPage';
@@ -27,6 +27,7 @@ function Storefront() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [supabaseProducts, setSupabaseProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailQuantity, setDetailQuantity] = useState(1);
 
@@ -35,11 +36,25 @@ function Storefront() {
   }, [cart]);
 
   useEffect(() => {
-    getStoreSettings().then(setSettings);
-    getCatalogProducts().then(setSupabaseProducts);
+    Promise.all([
+      getStoreSettings(),
+      getCatalogProducts()
+    ]).then(([settingsRes, productsRes]) => {
+      setSettings(settingsRes);
+      setSupabaseProducts(productsRes);
+      setIsLoading(false);
+    }).catch(() => setIsLoading(false));
   }, []);
 
   const allProducts = supabaseProducts;
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--primary)' }}>
+        <Loader2 className="spin" size={48} />
+      </div>
+    );
+  }
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -202,12 +217,15 @@ function Storefront() {
               {cart.length === 0 ? <p>Sua sacola está vazia.</p> : cart.map(item => (
                 <div key={item.id} className="cart-item">
                   <div className="cart-item-info">
-                    <div className="cart-item-header"><h4>{item.name}</h4><span>{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                    <div className="cart-item-header"><h4>{item.name}</h4></div>
                     <div className="cart-item-details">
                       <div className="item-actions">
-                        <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}><Minus size={14} /></button>
-                        <span>{item.quantity}</span>
-                        <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}><Plus size={14} /></button>
+                        <div className="item-quantity-controls">
+                          <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}><Minus size={14} /></button>
+                          <span>{item.quantity}</span>
+                          <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}><Plus size={14} /></button>
+                        </div>
+                        <strong>{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                       </div>
                     </div>
                   </div>

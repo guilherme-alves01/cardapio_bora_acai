@@ -201,44 +201,6 @@ body {
 }
 
 .product-modal-overlay {
-  position: fixed; inset: 0; z-index: 2600; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  background: rgba(0, 0, 0, 0.52);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.checkout-modal {
-  width: min(600px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 24px 70px rgba(44, 48, 46, 0.22);
-  padding: 24px;
-  position: relative;
-}
-
-.product-modal {
-  width: min(520px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
-  position: relative;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 24px 70px rgba(44, 48, 46, 0.22);
-  display: flex;
-  flex-direction: column;
-}
-.product-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 2600;
@@ -306,7 +268,7 @@ body {
 }
 
 .close-modal:hover {
-  background: rgba(224, 90, 61, 0.08);
+  background: rgba(109, 40, 217, 0.08);
   border-color: var(--primary);
 }
 
@@ -435,13 +397,6 @@ body {
   border-color: var(--primary); background: rgba(109, 40, 217, 0.08);
 }
 
-.product-modal-image-wrap {
-  width: 100%;
-  aspect-ratio: 16 / 11;
-  background: var(--bg-main);
-  overflow: hidden;
-}
-
 .product-modal-image {
   width: 100%; height: 100%; object-fit: cover;
 }
@@ -558,15 +513,34 @@ body {
 }
 
 .cart-item-header {
-  display: flex; justify-content: space-between;
+  display: flex;
+  justify-content: space-between;
 }
 
-.cart-item-total-price {
-  font-weight: 700; color: var(--primary);
+.cart-item-header h4 {
+  margin: 0 0 12px;
 }
 
 .item-actions {
-  display: flex; align-items: center; gap: 12px; background: var(--bg-main); padding: 6px 12px; border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-main);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.item-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-actions strong {
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .qty-btn {
