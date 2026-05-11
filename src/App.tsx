@@ -43,10 +43,7 @@ const normalizeImageForDisplay = async (source: string): Promise<string> => {
 };
 
 function Storefront() {
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem('bora-acai-cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cart, setCart] = useState<CartItem[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -62,10 +59,7 @@ function Storefront() {
   const cartFeedbackTimeout = useRef<number | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('bora-acai-cart', JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
+    localStorage.removeItem('bora-acai-cart');
     return () => {
       if (cartFeedbackTimeout.current) {
         window.clearTimeout(cartFeedbackTimeout.current);
@@ -144,6 +138,14 @@ function Storefront() {
       window.clearTimeout(cartFeedbackTimeout.current);
     }
     cartFeedbackTimeout.current = window.setTimeout(() => setCartFeedback(null), 1800);
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    setCartFeedback(null);
+    if (cartFeedbackTimeout.current) {
+      window.clearTimeout(cartFeedbackTimeout.current);
+    }
   };
 
   const openProductModal = (product: Product) => {
@@ -293,6 +295,7 @@ function Storefront() {
             <div className="cart-header">
               <ShoppingBag size={24} color="var(--primary)" />
               <h2>Sua Sacola</h2>
+              {cart.length > 0 && <button className="clear-cart-btn" onClick={clearCart}>Esvaziar</button>}
               <button className="close-cart-btn" onClick={() => setIsCartOpen(false)}><X size={24} /></button>
             </div>
             <div className="cart-content">

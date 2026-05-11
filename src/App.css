@@ -248,8 +248,21 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: 0 24px 70px rgba(44, 48, 46, 0.22);
   padding: 24px;
+  box-sizing: border-box;
   position: relative;
   animation: panel-pop 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.checkout-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.checkout-form *,
+.checkout-form *::before,
+.checkout-form *::after {
+  box-sizing: border-box;
 }
 
 .modal-header,
@@ -303,6 +316,7 @@ body {
 
 .checkout-form input {
   width: 100%;
+  max-width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
@@ -312,15 +326,17 @@ body {
 
 .toggle-group,
 .payment-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
+  width: 100%;
+  justify-items: stretch;
 }
 
 .toggle-group button,
 .payment-grid button {
-  flex: 1;
-  min-width: 108px;
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
@@ -331,6 +347,10 @@ body {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+}
+
+.payment-grid button:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .toggle-group button.active,
@@ -388,9 +408,14 @@ body {
   .checkout-modal {
     max-height: calc(100vh - 24px);
     border-radius: var(--radius-md);
+    width: min(100%, 390px);
   }
   .address-grid {
     grid-template-columns: 1fr;
+  }
+  .toggle-group,
+  .payment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -487,8 +512,15 @@ body {
   color: #000000;
 }
 
+.clear-cart-btn {
+  margin-left: auto; border: none; background: transparent; color: var(--primary); font-size: 0.82rem; font-weight: 800; cursor: pointer; padding: 8px 4px;
+}
+
+.clear-cart-btn:hover {
+  color: var(--primary-hover);
+}
+
 .close-cart-btn {
-  margin-left: auto;
   width: 36px;
   height: 36px;
   border: 1px solid var(--border-light);
@@ -573,7 +605,7 @@ body {
 }
 
 .cart-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.76); backdrop-filter: none; z-index: 1950; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.56); backdrop-filter: none; z-index: 1950; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
 }
 
 .cart-overlay.open { opacity: 1; pointer-events: auto; }
