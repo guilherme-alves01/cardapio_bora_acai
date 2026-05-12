@@ -55,6 +55,7 @@ function Storefront() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailQuantity, setDetailQuantity] = useState(1);
   const [displayImageSources, setDisplayImageSources] = useState<Record<string, string>>({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
   const cartFeedbackTimeout = useRef<number | null>(null);
 
@@ -103,6 +104,10 @@ function Storefront() {
     return () => {
       cancelled = true;
     };
+  }, [supabaseProducts]);
+
+  useEffect(() => {
+    setLoadedImages({});
   }, [supabaseProducts]);
 
   const allProducts = supabaseProducts;
@@ -272,7 +277,16 @@ function Storefront() {
                       onClick={() => openProductModal(product)}
                       style={{ '--card-index': index } as CSSProperties}
                     >
-                      <div className="product-image-container"><img src={displayImageSources[product.id] || product.image} alt={product.name} className="product-image" /></div>
+                      <div className={`product-image-container ${loadedImages[product.id] ? 'loaded' : ''}`}>
+                        <img
+                          src={displayImageSources[product.id] || product.image}
+                          alt={product.name}
+                          className="product-image"
+                          loading="lazy"
+                          decoding="async"
+                          onLoad={() => setLoadedImages(prev => ({ ...prev, [product.id]: true }))}
+                        />
+                      </div>
                       <div className="product-info">
                         <h3>{product.name}</h3>
                         <p className="product-description">{product.description}</p>
