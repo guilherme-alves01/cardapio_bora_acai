@@ -5,6 +5,8 @@ create table if not exists public.products (
   name text not null,
   description text default '',
   price numeric(10, 2) not null default 0,
+  promotion_active boolean not null default false,
+  promotion_price numeric(10, 2),
   image_url text default '',
   category text not null,
   featured boolean not null default false,
@@ -75,6 +77,10 @@ for all
 to authenticated
 using (true)
 with check (true);
+
+alter table if exists public.products
+  add column if not exists promotion_active boolean not null default false,
+  add column if not exists promotion_price numeric(10, 2);
 
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
